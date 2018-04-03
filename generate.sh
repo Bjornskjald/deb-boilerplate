@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 
-# IMPORTANT 
-# Protect agaisnt mispelling a var and rm -rf /
+# IMPORTANT
+# Protect against mispelling a var and rm -rf /
 set -u
 set -e
 
-SRC=${PWD}/src
-DIST=${PWD}/dist
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+DIST=${DIR}/dist
 SYSROOT=${SRC}/sysroot
-DEBIAN=${SRC}/DEBIAN
 
-rm -rf ${DIST}
 mkdir -p ${DIST}/
+rsync -a deb-src/ ${DIR}/src/
 
-rm -rf ${SRC}
-rsync -a deb-src/ ${SRC}/
-
-find ${SRC}/ -type d -exec chmod 0755 {} \;
-find ${SRC}/ -type f -exec chmod go-w {} \;
+find ${DIR}/src/ -type d -exec chmod 0755 {} \;
+find ${DIR}/src/ -type f -exec chmod go-w {} \;
 
 let SIZE=`du -s ${SYSROOT} | sed s'/\s\+.*//'`+8
+
 pushd ${SYSROOT}/
 tar czf ${DIST}/data.tar.gz [a-z]*
 popd
+
 sed s"/SIZE/${SIZE}/" -i ${DEBIAN}/control
+
 pushd ${DEBIAN}
 tar czf ${DIST}/control.tar.gz *
 popd
@@ -37,3 +37,6 @@ find ${DIST}/ -type f -exec chmod go-w {} \;
 ar r ${DIST}/package.deb debian-binary control.tar.gz data.tar.gz
 popd
 rsync -a ${DIST}/package.deb ./
+
+rm -r ${DIST}
+rm -r ${DIR}/src
